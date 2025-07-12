@@ -1,0 +1,285 @@
+#include <iostream>
+#include <chrono>
+#include <random>
+#include <vector>
+
+using namespace std;
+using namespace std::chrono;
+
+struct node {
+int data;
+node* next;
+};
+
+node* head = nullptr;
+
+node* create_node(int value) {
+node* new_node = new node();
+new_node->data = value;
+new_node->next = nullptr;
+return new_node;
+}
+
+void insert_at_beginning(int value) {
+node* new_node = create_node(value);
+new_node->next = head;
+head = new_node;
+}
+
+void print_list(bool showFull = false) {
+if (!head) {
+cout << "the list is empty" << endl;
+return;
+}
+
+if (showFull) {
+node* temp = head;
+while (temp != nullptr) {
+cout << temp->data;
+if (temp->next != nullptr) cout << " -> ";
+temp = temp->next;
+}
+cout << " -> nullptr" << endl;
+} else {
+if (head) {
+cout << "first 5 elements: ";
+node* temp = head;
+for (int i = 0; i < 5 && temp != nullptr; i++) {
+cout << temp->data << " ";
+temp = temp->next;
+}
+
+int count = 0;
+temp = head;
+while (temp != nullptr) {
+count++;
+temp = temp->next;
+}
+
+if (count > 10) {
+cout << "\nlast 5 elements: ";
+temp = head;
+for (int i = 0; i < count - 5; i++) {
+temp = temp->next;
+}
+for (int i = 0; i < 5 && temp != nullptr; i++) {
+cout << temp->data << " ";
+temp = temp->next;
+}
+}
+cout << endl;
+}
+}
+}
+
+void clear_list() {
+while (head != nullptr) {
+node* temp = head;
+head = head->next;
+delete temp;
+}
+}
+
+void generate_random_numbers(int N, int min_val = 1, int max_val = 10000) {
+clear_list();
+random_device rd;
+mt19937 gen(rd());
+uniform_int_distribution<> dist(min_val, max_val);
+
+for (int i = 0; i < N; ++i) {
+insert_at_beginning(dist(gen));
+}
+}
+
+node* get_tail(node* cur) {
+while (cur != nullptr && cur->next != nullptr) {
+cur = cur->next;
+}
+return cur;
+}
+
+node* partition(node* head, node* end, node** new_head, node** new_end) {
+node* pivot = end;
+node* prev = nullptr;
+node* cur = head;
+node* tail = pivot;
+
+while (cur != pivot) {
+if (cur->data < pivot->data) {
+if (*new_head == nullptr) *new_head = cur;
+prev = cur;
+cur = cur->next;
+} else {
+if (prev) prev->next = cur->next;
+node* tmp = cur->next;
+cur->next = nullptr;
+tail->next = cur;
+tail = cur;
+cur = tmp;
+}
+}
+
+if (*new_head == nullptr) *new_head = pivot;
+*new_end = tail;
+
+return pivot;
+}
+
+node* quick_sort_recur(node* head, node* end) {
+if (!head || head == end) return head;
+
+node* new_head = nullptr;
+node* new_end = nullptr;
+
+node* pivot = partition(head, end, &new_head, &new_end);
+
+if (new_head != pivot) {
+node* tmp = new_head;
+while (tmp->next != pivot) tmp = tmp->next;
+tmp->next = nullptr;
+
+new_head = quick_sort_recur(new_head, tmp);
+
+tmp = get_tail(new_head);
+tmp->next = pivot;
+}
+
+pivot->next = quick_sort_recur(pivot->next, new_end);
+
+return new_head;
+}
+
+void quick_sort() {
+head = quick_sort_recur(head, get_tail(head));
+}
+
+node* split(node* head) {
+node* slow = head;
+node* fast = head->next;
+
+while (fast != nullptr && fast->next != nullptr) {
+slow = slow->next;
+fast = fast->next->next;
+}
+
+node* second = slow->next;
+slow->next = nullptr;
+return second;
+}
+
+node* merge(node* first, node* second) {
+if (!first) return second;
+if (!second) return first;
+
+if (first->data < second->data) {
+first->next = merge(first->next, second);
+return first;
+} else {
+second->next = merge(first, second->next);
+return second;
+}
+}
+
+node* merge_sort(node* head) {
+if (!head || !head->next) return head;
+
+node* second = split(head);
+
+head = merge_sort(head);
+second = merge_sort(second);
+
+return merge(head, second);
+}
+
+void run_comparison(int N) {
+cout << "\nRunning comparison with " << N << " random numbers " << endl;
+
+cout << "Generating " << N << " random numbers" << endl;
+generate_random_numbers(N);
+cout << "Generated list:" << endl;
+print_list();
+
+node* original_head = nullptr;
+node* temp = head;
+node* copy_temp = nullptr;
+while (temp != nullptr) {
+node* new_node = create_node(temp->data);
+if (original_head == nullptr) {
+original_head = new_node;
+copy_temp = original_head;
+} else {
+copy_temp->next = new_node;
+copy_temp = copy_temp->next;
+}
+temp = temp->next;
+}
+
+cout << "\nPerforming Quick Sort" << endl;
+auto qs_start = high_resolution_clock::now();
+quick_sort();
+auto qs_duration = duration_cast<microseconds>(high_resolution_clock::now() - qs_start);
+cout << "Quick Sort completed in " << qs_duration.count() / 1000.0 << " ms" << endl;
+cout << "Sorted list:" << endl;
+print_list();
+
+clear_list();
+
+temp = original_head;
+while (temp != nullptr) {
+insert_at_beginning(temp->data);
+temp = temp->next;
+}
+
+cout << "\nPerforming Merge Sort" << endl;
+auto ms_start = high_resolution_clock::now();
+head = merge_sort(head);
+auto ms_duration = duration_cast<microseconds>(high_resolution_clock::now() - ms_start);
+cout << "Merge Sort completed in " << ms_duration.count() / 1000.0 << " ms" << endl;
+cout << "Sorted list:" << endl;
+print_list();
+
+cout << "\n RESULTSSS " << endl;
+cout << "Quick Sort time: " << qs_duration.count() / 1000.0 << " ms" << endl;
+cout << "Merge Sort time: " << ms_duration.count() / 1000.0 << " ms" << endl;
+cout << "Time difference: " << abs(qs_duration.count() - ms_duration.count()) / 1000.0 << " ms" << endl;
+
+clear_list();
+while (original_head != nullptr) {
+node* temp = original_head;
+original_head = original_head->next;
+delete temp;
+}
+
+cout << "\nCOMPARISON COMPLETED" << endl;
+}
+
+// MAINNNNNNNNNNN
+
+int main() {
+cout << "Sorting Algorithm Program" << endl;
+
+while (true) {
+int N;
+cout << "\nEnter the number of random numbers to generate: ";
+cin >> N;
+
+if (N <= 0) {
+break;
+}
+
+if (N > 1000000) {
+cout << "Warningggg : Large numbers may take significant time and memory." << endl;
+cout << "Are you sure you want to continue? (y/n): ";
+char confirm; 
+cin >> confirm;
+if (confirm != 'y' && confirm != 'Y') {
+continue;
+}
+}
+
+run_comparison(N);
+}
+
+cout << "Program exited!!" << endl;
+return 0;
+}
