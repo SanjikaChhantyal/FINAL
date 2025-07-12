@@ -1,0 +1,106 @@
+#include <iostream>
+#include <vector>
+#include <cstdlib>
+#include <ctime>
+#include <algorithm>
+#include <chrono>
+
+using namespace std;
+using namespace std::chrono;
+
+vector<int> generateSortedRandomNumbers(int n) {
+    vector<int> arr(n);
+    srand(time(0));
+    for (int i = 0; i < n; ++i) {
+        arr[i] = rand() % 1000;
+    }
+    sort(arr.begin(), arr.end());
+    return arr;
+}
+
+int binarySearch(const vector<int>& arr, int target) {
+    int low = 0;
+    int high = arr.size() - 1;
+    while (low <= high) {
+        int mid = low + (high - low) / 2;
+        if (arr[mid] == target)
+            return mid;
+        else if (arr[mid] < target)
+            low = mid + 1;
+        else
+            high = mid - 1;
+    }
+    return -1;
+}
+
+int binarySearchRange(const vector<int>& arr, int left, int right, int key) {
+    while (left <= right) {
+        int mid = left + (right - left) / 2;
+        if (arr[mid] == key)
+            return mid;
+        else if (arr[mid] < key)
+            left = mid + 1;
+        else
+            right = mid - 1;
+    }
+    return -1;
+}
+
+int exponentialSearch(const vector<int>& arr, int key) {
+    int size = arr.size();
+    if (arr[0] == key) return 0;
+
+  int i = 1;
+  while (i < size && arr[i] <= key)
+      i *= 2;
+
+  return binarySearchRange(arr, i / 2, min(i, size - 1), key);
+}
+
+void displayLimitedArray(const vector<int>& arr) {
+    cout << "First 6 elements of sorted array: ";
+    for (int i = 0; i < min(6, (int)arr.size()); ++i) {
+        cout << arr[i] << " ";
+    }
+    cout << "...\n";
+}
+
+//MAIN!!!!
+
+int main() {
+    cout << "Searching Algorithm Program\n" << endl;
+
+  int n, key;
+  cout << "Enter number of random integers: ";
+  cin >> n;
+
+  vector<int> arr = generateSortedRandomNumbers(n);
+  displayLimitedArray(arr);
+
+  cout << "\nEnter number to search: ";
+  cin >> key;
+
+  auto start1 = high_resolution_clock::now();
+  int binaryIndex = binarySearch(arr, key);
+  auto end1 = high_resolution_clock::now(); 
+  auto duration1 = duration_cast<microseconds>(end1 - start1);
+
+  if (binaryIndex != -1)
+      cout << "\nBinary Search: Found at index " << binaryIndex << endl;
+  else
+      cout << "\nBinary Search: Not found\n";
+  cout << "Time taken by Binary Search: " << duration1.count() << " ms\n";
+
+  auto start2 = high_resolution_clock::now();
+  int expIndex = exponentialSearch(arr, key);
+  auto end2 = high_resolution_clock::now();
+  auto duration2 = duration_cast<microseconds>(end2 - start2);
+
+  if (expIndex != -1)
+      cout << "\nExponential Search: Found at index " << expIndex << endl;
+  else
+      cout << "\nExponential Search: Not found\n";
+  cout << "Time taken by Exponential Search: " << duration2.count() << " ms\n";
+
+  return 0;
+}
